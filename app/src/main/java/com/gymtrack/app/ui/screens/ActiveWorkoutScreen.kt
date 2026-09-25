@@ -538,6 +538,10 @@ fun ActiveWorkoutScreen(nav: NavHostController, sessionId: Long) {
 
 private fun KeyboardTypeDecimal() = androidx.compose.ui.text.input.KeyboardType.Decimal
 
+@Composable
+private fun Modifier.androidHRow(): Modifier =
+    this.horizontalScroll(androidx.compose.foundation.rememberScrollState())
+
 /** Marca séries como puladas (completed = false) sem mexer no estado da UI */
 private suspend fun markSetSilent(sessionId: Long, exercise: WorkoutExercise, st: SetState) {
     kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {

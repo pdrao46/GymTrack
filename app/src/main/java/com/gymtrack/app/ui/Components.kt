@@ -38,6 +38,9 @@ fun refreshTick(): Int {
     return RefreshBus.tick.collectAsState().value
 }
 
+@Composable
+private fun Modifier.androidH(): Modifier = this.horizontalScroll(rememberScrollState())
+
 val workoutPalette = listOf(
     Color(0xFF22C55E), Color(0xFFF97316), Color(0xFF3B82F6),
     Color(0xFFA855F7), Color(0xFFEC4899), Color(0xFF14B8A6)

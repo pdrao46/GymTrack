@@ -230,13 +230,3 @@ fun ChecklistScreen(nav: NavHostController) {
         }
     }
 }
-
-@Composable
-private fun Modifier.clip14(): Modifier = this.then(
-    Modifier.clipPriv()
-)
-
-@Composable
-private fun Modifier.clipPriv(): Modifier = androidx.compose.ui.draw.clip(
-    androidx.compose.foundation.shape.RoundedCornerShape(14.dp), this
-)
