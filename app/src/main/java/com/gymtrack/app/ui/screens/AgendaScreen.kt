@@ -125,7 +125,7 @@ private fun WeekAgenda(nav: NavHostController, workouts: List<Workout>, sessions
                 'I' -> { icon = Icons.Filled.PlayArrow; tint = MaterialTheme.colorScheme.secondary; desc = "Em andamento" }
                 'X' -> { icon = Icons.Filled.Close; tint = MaterialTheme.colorScheme.error.copy(alpha = 0.85f); desc = "Não realizado" }
                 'P' -> { icon = Icons.Filled.Schedule; tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.65f); desc = "Planejado" }
-                else -> { icon = Icons.Filled.Minus; tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f); desc = "Descanso" }
+                else -> { icon = Icons.Filled.Remove; tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f); desc = "Descanso" }
             }
             AppCard(Modifier.fillMaxWidth()) {
                 Row(verticalAlignment = Alignment.CenterVertically) {

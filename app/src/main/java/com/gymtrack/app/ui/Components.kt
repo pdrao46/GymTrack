@@ -73,7 +73,7 @@ fun AppCard(
     content: @Composable ColumnScope.() -> Unit
 ) {
     val shape = RoundedCornerShape(18.dp)
-    val pad = if (LocalAppSettings.current.comfortableCards) 16 else 12
+    val pad = if (LocalAppSettings.current.comfortableCards) 16.dp else 12.dp
     val bg = MaterialTheme.colorScheme.surfaceVariant
     val border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.55f))
     if (onClick != null) {
@@ -529,23 +529,26 @@ fun LineChart(
             val pts = data.mapIndexed { i, (_, v) ->
                 androidx.compose.ui.geometry.Offset(i * stepX, h - ((v - min) / range * (h - 16)).toFloat() - 8f)
             }
-            val path = Path()
-            pts.forEachIndexed { i, p -> if (i == 0) path.moveTo(p.x, p.y) else path.lineTo(p.x, p.y) }
-            val area = Path()
-            area.moveTo(0f, h)
-            pts.forEach { p -> area.lineTo(p.x, p.y) }
-            area.lineTo(w, h)
-            area.close()
-            val clipW = w * progress.value
-            clipRect(left = 0f, top = 0f, right = clipW, bottom = h) {
+            val clipW = (w * progress.value).coerceAtLeast(1f)
+            val visible = pts.filter { it.x <= clipW + 0.5f }
+            if (visible.size >= 2) {
+                val vp = Path()
+                visible.forEachIndexed { i, p -> if (i == 0) vp.moveTo(p.x, p.y) else vp.lineTo(p.x, p.y) }
+                val va = Path()
+                va.moveTo(0f, h)
+                visible.forEach { p -> va.lineTo(p.x, p.y) }
+                va.lineTo(clipW, h)
+                va.close()
                 drawPath(
-                    area,
+                    va,
                     Brush.verticalGradient(
                         colors = listOf(color.copy(alpha = 0.28f), color.copy(alpha = 0f))
                     )
                 )
-                drawPath(path, color, style = Stroke(width = 5f, cap = StrokeCap.Round))
-                pts.forEach { p -> drawCircle(color, radius = 7f, center = p) }
+                drawPath(vp, color, style = Stroke(width = 5f, cap = StrokeCap.Round))
+                visible.forEach { p -> drawCircle(color, radius = 7f, center = p) }
+            } else if (visible.size == 1) {
+                drawCircle(color, radius = 7f, center = visible[0])
             }
         }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
