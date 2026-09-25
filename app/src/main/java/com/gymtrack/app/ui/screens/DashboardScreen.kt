@@ -256,7 +256,7 @@ fun DashboardScreen(nav: NavHostController) {
 
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             AppCard(Modifier.weight(1f), onClick = { nav.navigate(Routes.CHECKLIST) }) {
-                Icon(Icons.Filled.PlaylistAddCheck, null, tint = MaterialTheme.colorScheme.secondary)
+                Icon(Icons.Filled.Check, null, tint = MaterialTheme.colorScheme.secondary)
                 Spacer(Modifier.height(6.dp))
                 Text("Checklist pré-treino", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
             }

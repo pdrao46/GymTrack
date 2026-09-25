@@ -231,9 +231,6 @@ fun WorkoutEditScreen(nav: NavHostController, workoutId: Long) {
     }
 }
 
-@Composable
-private fun KeyboardType.Number = androidx.compose.ui.text.input.KeyboardType.Number
-
 // ---------- diálogo para escolher exercício do catálogo ----------
 
 @Composable

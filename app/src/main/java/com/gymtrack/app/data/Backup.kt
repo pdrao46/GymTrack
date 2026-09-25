@@ -147,7 +147,7 @@ object Backup {
                         "sessionId" to o.getLong("sessionId"), "exerciseId" to o.optLong("exerciseId"),
                         "exerciseName" to o.optString("exerciseName"), "muscleGroup" to o.optString("muscleGroup"),
                         "setNumber" to o.optInt("setNumber"), "reps" to o.optInt("reps"),
-                        "weight" to optDouble(o, "weight") ?: 0.0, "rir" to o.optString("rir"),
+                        "weight" to (optDouble(o, "weight") ?: 0.0), "rir" to o.optString("rir"),
                         "rpe" to o.optString("rpe"), "completed" to o.optBoolean("completed", true),
                         "note" to o.optString("note"), "timestamp" to o.optLong("timestamp")
                     ))
