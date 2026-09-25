@@ -18,6 +18,7 @@ private val Context.dataStore by preferencesDataStore(name = "gymtrack_settings"
 
 data class Settings(
     val appName: String = "GymTrack",
+    val userName: String = "", // nome do usuário exibido na saudação
     val theme: Int = 0, // 0 sistema, 1 claro, 2 escuro
     val unit: String = "kg", // kg | lb
     val firstDaySunday: Boolean = false,
@@ -34,6 +35,7 @@ object SettingsState {
 
 object SettingsRepo {
     val KEY_NAME = stringPreferencesKey("app_name")
+    val KEY_USERNAME = stringPreferencesKey("user_name")
     val KEY_THEME = intPreferencesKey("theme")
     val KEY_UNIT = stringPreferencesKey("unit")
     val KEY_FIRST_SUNDAY = booleanPreferencesKey("first_day_sunday")
@@ -47,6 +49,7 @@ object SettingsRepo {
     fun flow(context: Context): Flow<Settings> = context.dataStore.data.map { p ->
         Settings(
             appName = p[KEY_NAME] ?: "GymTrack",
+            userName = p[KEY_USERNAME] ?: "",
             theme = p[KEY_THEME] ?: 0,
             unit = p[KEY_UNIT] ?: "kg",
             firstDaySunday = p[KEY_FIRST_SUNDAY] ?: false,

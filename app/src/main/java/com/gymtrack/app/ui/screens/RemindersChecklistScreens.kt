@@ -1,9 +1,11 @@
 package com.gymtrack.app.ui.screens
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -55,12 +57,21 @@ fun RemindersScreen(nav: NavHostController) {
                     val r = reminders[i]
                     AppCard(Modifier.fillMaxWidth()) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                Icons.Filled.Alarm,
-                                null,
-                                tint = if (r.enabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                            Spacer(Modifier.width(12.dp))
+                            Box(
+                                Modifier.size(38.dp).clip(RoundedCornerShape(12.dp)).background(
+                                    if (r.enabled) MaterialTheme.colorScheme.primary.copy(alpha = 0.14f)
+                                    else MaterialTheme.colorScheme.surfaceContainerHigh
+                                ),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    Icons.Filled.Notifications,
+                                    null,
+                                    modifier = Modifier.size(19.dp),
+                                    tint = if (r.enabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            Spacer(Modifier.width(11.dp))
                             Column(Modifier.weight(1f)) {
                                 Text(r.title.ifBlank { "Lembrete" }, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
                                 val days = r.days.split(",").mapNotNull { it.trim().toIntOrNull() }.sorted()
@@ -70,8 +81,9 @@ fun RemindersScreen(nav: NavHostController) {
                                     else -> days.joinToString(", ") { DateUtils.dowShort(it) }
                                 }
                                 Text(
-                                    "$daysTxt · ${r.hour.toString().padStart(2, '0')}:${r.minute.toString().padStart(2, '0')}",
-                                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    "$daysTxt • ${r.hour.toString().padStart(2, '0')}:${r.minute.toString().padStart(2, '0')}",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
                             Switch(

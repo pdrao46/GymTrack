@@ -49,6 +49,18 @@ fun SettingsScreen(nav: NavHostController) {
             }) { Text("Salvar nome") }
 
             HorizontalDivider(Modifier.padding(vertical = 10.dp))
+            Text("Seu nome (saudação no início)", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+            Spacer(Modifier.height(6.dp))
+            var userNameTxt by remember(settings.userName) { mutableStateOf(settings.userName) }
+            LabeledTextField(userNameTxt, { userNameTxt = it.take(30) }, "Ex.: Pedro")
+            Spacer(Modifier.height(6.dp))
+            TextButton(onClick = {
+                Graph.launch {
+                    SettingsRepo.save(context) { it[SettingsRepo.KEY_USERNAME] = userNameTxt.trim() }
+                }
+            }) { Text("Salvar meu nome") }
+
+            HorizontalDivider(Modifier.padding(vertical = 10.dp))
             Text("Tema", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
             listOf(0 to "Seguir o sistema", 1 to "Claro ☀️", 2 to "Escuro 🌙").forEach { (v, label) ->
                 Row(Modifier.fillMaxWidth().clickable {

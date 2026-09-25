@@ -27,13 +27,15 @@ fun NotesScreen(nav: NavHostController) {
     val tick = refreshTick()
     var notes by remember { mutableStateOf<List<Note>>(emptyList()) }
     var query by remember { mutableStateOf("") }
+    var onlyFavs by remember { mutableStateOf(false) }
 
     LaunchedEffect(tick) {
         kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { notes = Repo.notes() }
     }
 
-    val filtered = if (query.isBlank()) notes else notes.filter {
-        it.title.contains(query, true) || it.content.contains(query, true)
+    val filtered = notes.filter { n ->
+        (!onlyFavs || n.isFavorite) &&
+            (query.isBlank() || n.title.contains(query, true) || n.content.contains(query, true))
     }
 
     Box(Modifier.fillMaxSize()) {
@@ -45,6 +47,11 @@ fun NotesScreen(nav: NavHostController) {
             }
             Spacer(Modifier.height(8.dp))
             LabeledTextField(query, { query = it }, "🔍 Pesquisar por palavra...")
+            Spacer(Modifier.height(8.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                FilterChip(selected = !onlyFavs, onClick = { onlyFavs = false }, label = { Text("Todas (${notes.size})") })
+                FilterChip(selected = onlyFavs, onClick = { onlyFavs = true }, label = { Text("⭐ Favoritas") })
+            }
             Spacer(Modifier.height(8.dp))
             if (filtered.isEmpty()) {
                 AppCard(Modifier.fillMaxWidth()) {
@@ -64,7 +71,8 @@ fun NotesScreen(nav: NavHostController) {
                                 )
                                 Text(
                                     "editada em ${DateUtils.fmtDate(DateUtils.epochDayOfMillis(n.updatedAt))}",
-                                    style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
                             Icon(
@@ -250,10 +258,38 @@ fun GoalsScreen(nav: NavHostController) {
                     val reached = cur >= g.target
                     AppCard(Modifier.fillMaxWidth()) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(if (reached) "🏆" else "🎯", style = MaterialTheme.typography.headlineSmall)
-                            Spacer(Modifier.width(10.dp))
+                            RingProgress(
+                                ratio = ratio,
+                                modifier = Modifier.size(54.dp),
+                                color = if (reached) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.primary.copy(alpha = 0.85f),
+                                strokeWidth = 5f
+                            ) {
+                                Text(
+                                    "${(ratio * 100).toInt()}%",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = if (reached) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+                            Spacer(Modifier.width(12.dp))
                             Column(Modifier.weight(1f)) {
-                                Text(g.title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text(
+                                        g.title,
+                                        style = MaterialTheme.typography.titleSmall,
+                                        fontWeight = FontWeight.Bold,
+                                        modifier = Modifier.weight(1f, fill = false)
+                                    )
+                                    if (reached) {
+                                        Spacer(Modifier.width(6.dp))
+                                        PillBadge(
+                                            "META CONCLUÍDA 🎯",
+                                            container = MaterialTheme.colorScheme.primary.copy(alpha = 0.16f),
+                                            content = MaterialTheme.colorScheme.primary
+                                        )
+                                    }
+                                }
+                                Spacer(Modifier.height(3.dp))
                                 Text(txt, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 Spacer(Modifier.height(8.dp))
                                 FilledProgressBar(ratio)

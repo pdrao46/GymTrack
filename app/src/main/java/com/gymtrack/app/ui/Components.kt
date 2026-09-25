@@ -1,8 +1,20 @@
 package com.gymtrack.app.ui
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.slideInVertically
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -16,15 +28,19 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.gymtrack.app.data.DateUtils
 import com.gymtrack.app.data.RefreshBus
 import com.gymtrack.app.data.Settings
@@ -46,71 +62,280 @@ val workoutPalette = listOf(
     Color(0xFFA855F7), Color(0xFFEC4899), Color(0xFF14B8A6)
 )
 
+// ---------- Microinterações ----------
+
+// ---------- Cartão padrão ----------
+
 @Composable
 fun AppCard(
     modifier: Modifier = Modifier,
     onClick: (() -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit
 ) {
-    val shape = RoundedCornerShape(20.dp)
+    val shape = RoundedCornerShape(18.dp)
+    val pad = if (LocalAppSettings.current.comfortableCards) 16 else 12
+    val bg = MaterialTheme.colorScheme.surfaceVariant
+    val border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.55f))
     if (onClick != null) {
-        Surface(modifier = modifier.clip(shape).clickable { onClick() }, shape = shape, color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)) {
-            Column(Modifier.padding(16.dp), content = content)
+        Surface(
+            modifier = modifier.clip(shape).clickable { onClick() },
+            shape = shape,
+            color = bg,
+            border = border,
+            shadowElevation = 1.dp
+        ) {
+            Column(Modifier.padding(pad), content = content)
         }
     } else {
-        Surface(modifier = modifier, shape = shape, color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)) {
-            Column(Modifier.padding(16.dp), content = content)
+        Surface(
+            modifier = modifier,
+            shape = shape,
+            color = bg,
+            border = border,
+            shadowElevation = 1.dp
+        ) {
+            Column(Modifier.padding(pad), content = content)
         }
     }
 }
 
+/** Título de seção: indicador accent + caixa alta com hierarquia editorial */
 @Composable
 fun SectionTitle(text: String, modifier: Modifier = Modifier) {
-    Text(
-        text, modifier = modifier.padding(start = 4.dp),
-        style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold
-    )
+    Row(modifier.padding(start = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+        Box(
+            Modifier
+                .width(3.dp)
+                .height(13.dp)
+                .clip(RoundedCornerShape(2.dp))
+                .background(MaterialTheme.colorScheme.primary)
+        )
+        Spacer(Modifier.width(8.dp))
+        Text(
+            text.uppercase(),
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.Bold,
+            letterSpacing = 0.9.sp,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+    }
 }
 
+/** Cabeçalho padrão das telas internas (voltar + título + ações) */
+@Composable
+fun BackHeader(
+    title: String,
+    onBack: () -> Unit,
+    modifier: Modifier = Modifier,
+    actions: @Composable RowScope.() -> Unit = {}
+) {
+    Row(modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        IconButton(onClick = onBack) { Icon(Icons.Filled.ArrowBack, "Voltar") }
+        Text(
+            title,
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.weight(1f),
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
+        actions()
+    }
+}
+
+/** Estatística compacta: número em destaque + rótulo pequeno */
 @Composable
 fun StatCell(value: String, label: String, modifier: Modifier = Modifier) {
     Column(modifier.padding(vertical = 6.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(value, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-        Text(label, style = MaterialTheme.typography.labelSmall, textAlign = TextAlign.Center, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(
+            value,
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.ExtraBold,
+            color = MaterialTheme.colorScheme.onSurface,
+            maxLines = 1
+        )
+        Text(
+            label,
+            style = MaterialTheme.typography.labelSmall,
+            textAlign = TextAlign.Center,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
     }
 }
 
+/** Mini cartão de estatística com ícone accent (dashboard) */
+@Composable
+fun StatTile(
+    icon: ImageVector,
+    value: String,
+    label: String,
+    modifier: Modifier = Modifier,
+    tint: Color = MaterialTheme.colorScheme.primary
+) {
+    Surface(
+        modifier = modifier,
+        shape = RoundedCornerShape(16.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.55f)),
+        shadowElevation = 1.dp
+    ) {
+        Column(
+            Modifier.padding(horizontal = 6.dp, vertical = 11.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Icon(icon, null, modifier = Modifier.size(16.dp), tint = tint)
+            Spacer(Modifier.height(5.dp))
+            Text(
+                value,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.ExtraBold,
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 1,
+                textAlign = TextAlign.Center
+            )
+            Spacer(Modifier.height(1.dp))
+            Text(
+                label,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                textAlign = TextAlign.Center
+            )
+        }
+    }
+}
+
+/** Tag pequena em pílula */
+@Composable
+fun PillBadge(
+    text: String,
+    modifier: Modifier = Modifier,
+    container: Color = MaterialTheme.colorScheme.surfaceContainerHighest,
+    content: Color = MaterialTheme.colorScheme.onSurfaceVariant
+) {
+    Text(
+        text,
+        modifier = modifier
+            .background(container, RoundedCornerShape(50))
+            .padding(horizontal = 9.dp, vertical = 4.dp),
+        style = MaterialTheme.typography.labelSmall,
+        fontWeight = FontWeight.SemiBold,
+        color = content,
+        maxLines = 1
+    )
+}
+
+/** Barra de progresso com animação suave ao mudar o valor */
 @Composable
 fun FilledProgressBar(ratio: Float, modifier: Modifier = Modifier, color: Color = MaterialTheme.colorScheme.primary) {
+    val frac by animateFloatAsState(
+        targetValue = ratio.coerceIn(0f, 1f),
+        animationSpec = tween(650, easing = FastOutSlowInEasing),
+        label = "progress"
+    )
     Box(
         modifier
             .fillMaxWidth()
-            .height(10.dp)
-            .clip(RoundedCornerShape(6.dp))
-            .background(MaterialTheme.colorScheme.surfaceVariant)
+            .height(8.dp)
+            .clip(CircleShape)
+            .background(MaterialTheme.colorScheme.surfaceContainerHighest)
     ) {
         Box(
             Modifier
-                .fillMaxWidth(ratio.coerceIn(0f, 1f))
+                .fillMaxWidth(frac)
                 .fillMaxHeight()
-                .clip(RoundedCornerShape(6.dp))
+                .clip(CircleShape)
                 .background(color)
         )
     }
 }
 
+/** Anel de progresso circular (cronômetro de descanso, metas) */
 @Composable
-fun EmptyState(text: String, icon: ImageVector = Icons.Filled.FitnessCenter, modifier: Modifier = Modifier) {
-    Column(
-        modifier.fillMaxWidth().padding(32.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Icon(icon, null, modifier = Modifier.size(48.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f))
-        Spacer(Modifier.height(12.dp))
-        Text(text, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
+fun RingProgress(
+    ratio: Float,
+    modifier: Modifier = Modifier,
+    color: Color = MaterialTheme.colorScheme.primary,
+    trackColor: Color = MaterialTheme.colorScheme.surfaceContainerHighest,
+    strokeWidth: Float = 9f,
+    content: @Composable () -> Unit = {}
+) {
+    val frac by animateFloatAsState(
+        targetValue = ratio.coerceIn(0f, 1f),
+        animationSpec = tween(500, easing = FastOutSlowInEasing),
+        label = "ring"
+    )
+    Box(modifier, contentAlignment = Alignment.Center) {
+        androidx.compose.foundation.Canvas(Modifier.fillMaxSize()) {
+            val stroke = Stroke(width = strokeWidth * density, cap = StrokeCap.Round)
+            drawArc(color = trackColor, startAngle = -90f, sweepAngle = 360f, useCenter = false, style = stroke)
+            if (frac > 0.001f) {
+                drawArc(color = color, startAngle = -90f, sweepAngle = 360f * frac, useCenter = false, style = stroke)
+            }
+        }
+        content()
     }
 }
 
+/** Check com animação de "pop" — usado ao concluir sérias/exercícios */
+@Composable
+fun PopCheck(modifier: Modifier = Modifier, tint: Color = MaterialTheme.colorScheme.primary, size: androidx.compose.ui.unit.Dp = 26.dp) {
+    val scale = remember { Animatable(0.45f) }
+    LaunchedEffect(Unit) { scale.animateTo(1f, spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium)) }
+    Icon(
+        Icons.Filled.CheckCircle,
+        "Concluída",
+        modifier = modifier
+            .size(size)
+            .graphicsLayer { scaleX = scale.value; scaleY = scale.value },
+        tint = tint
+    )
+}
+
+/** Entrada suave de seções (fade + slide discreto) ao aparecer na tela */
+@Composable
+fun EnterSection(index: Int = 0, content: @Composable ColumnScope.() -> Unit) {
+    val delayMs = (index * 55).coerceAtMost(400)
+    var started by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) { started = true }
+    AnimatedVisibility(
+        visible = started,
+        enter = fadeIn(tween(300, delayMillis = delayMs)) +
+            slideInVertically(
+                animationSpec = tween(340, delayMillis = delayMs, easing = FastOutSlowInEasing),
+                initialOffsetY = { it / 5 }
+            ),
+        content = { Column(Modifier.fillMaxWidth(), content = content) }
+    )
+}
+
+/** Estado vazio com ícone em círculo suave */
+@Composable
+fun EmptyState(text: String, icon: ImageVector = Icons.Filled.FitnessCenter, modifier: Modifier = Modifier) {
+    Column(
+        modifier.fillMaxWidth().padding(28.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Box(
+            Modifier.size(64.dp).clip(CircleShape).background(MaterialTheme.colorScheme.surfaceContainerHigh),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(icon, null, modifier = Modifier.size(30.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        Spacer(Modifier.height(12.dp))
+        Text(
+            text,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center
+        )
+    }
+}
+
+/** Botão principal com leve escala ao tocar */
 @Composable
 fun PrimaryBigButton(
     text: String,
@@ -121,33 +346,49 @@ fun PrimaryBigButton(
     container: Color = MaterialTheme.colorScheme.primary,
     content: Color = MaterialTheme.colorScheme.onPrimary
 ) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val pressed by interactionSource.collectIsPressedAsState()
+    val scale by animateFloatAsState(if (pressed) 0.97f else 1f, tween(130), label = "press")
     Button(
         onClick = onClick,
         enabled = enabled,
-        modifier = modifier.fillMaxWidth().height(54.dp),
-        shape = RoundedCornerShape(16.dp),
+        interactionSource = interactionSource,
+        modifier = modifier
+            .fillMaxWidth()
+            .height(52.dp)
+            .graphicsLayer { scaleX = scale; scaleY = scale },
+        shape = RoundedCornerShape(15.dp),
         colors = ButtonDefaults.buttonColors(containerColor = container, contentColor = content)
     ) {
         if (icon != null) {
-            Icon(icon, null, modifier = Modifier.size(22.dp))
+            Icon(icon, null, modifier = Modifier.size(21.dp))
             Spacer(Modifier.width(10.dp))
         }
         Text(text, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
     }
 }
 
+/** Botão secundário (contornado) com leve escala ao tocar */
 @Composable
 fun TonalButton2(text: String, onClick: () -> Unit, modifier: Modifier = Modifier, icon: ImageVector? = null) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val pressed by interactionSource.collectIsPressedAsState()
+    val scale by animateFloatAsState(if (pressed) 0.97f else 1f, tween(130), label = "press")
     OutlinedButton(
         onClick = onClick,
-        modifier = modifier.height(46.dp),
-        shape = RoundedCornerShape(14.dp)
+        interactionSource = interactionSource,
+        modifier = modifier
+            .height(44.dp)
+            .graphicsLayer { scaleX = scale; scaleY = scale },
+        shape = RoundedCornerShape(13.dp),
+        colors = ButtonDefaults.outlinedButtonColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
     ) {
         if (icon != null) {
-            Icon(icon, null, modifier = Modifier.size(18.dp))
+            Icon(icon, null, modifier = Modifier.size(17.dp))
             Spacer(Modifier.width(6.dp))
         }
-        Text(text)
+        Text(text, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.SemiBold)
     }
 }
 
@@ -225,6 +466,7 @@ fun RadioPickerDialog(
 
 // ---------- Gráficos ----------
 
+/** Gráfico de barras com crescimento suave ao carregar */
 @Composable
 fun BarChart(
     data: List<Pair<String, Double>>,
@@ -234,6 +476,8 @@ fun BarChart(
 ) {
     if (data.isEmpty()) return
     val max = (data.maxOfOrNull { it.second } ?: 1.0).coerceAtLeast(1.0)
+    val progress = remember { Animatable(0f) }
+    LaunchedEffect(data) { progress.animateTo(1f, tween(700, easing = FastOutSlowInEasing)) }
     Column(modifier.fillMaxWidth()) {
         Row(
             Modifier.fillMaxWidth().height(130.dp),
@@ -243,12 +487,13 @@ fun BarChart(
             data.forEach { (label, v) ->
                 Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
                     if (v > 0) Text(valueFmt(v), style = MaterialTheme.typography.labelSmall, maxLines = 1)
+                    val target = (6f + 88f * (v / max).toFloat())
                     Box(
                         Modifier
                             .fillMaxWidth(0.66f)
-                            .height((6 + 88 * (v / max)).dp)
+                            .height((target * progress.value).dp)
                             .clip(RoundedCornerShape(5.dp))
-                            .background(if (v > 0) color else MaterialTheme.colorScheme.surfaceVariant)
+                            .background(if (v > 0) color else MaterialTheme.colorScheme.surfaceContainerHighest)
                     )
                     Spacer(Modifier.height(4.dp))
                     Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
@@ -258,6 +503,7 @@ fun BarChart(
     }
 }
 
+/** Gráfico de linha com desenho progressivo e área suave */
 @Composable
 fun LineChart(
     data: List<Pair<String, Double>>,
@@ -271,6 +517,8 @@ fun LineChart(
     val max = (data.maxOfOrNull { it.second } ?: 1.0).coerceAtLeast(1.0)
     val min = (data.minOfOrNull { it.second } ?: 0.0).coerceAtMost(0.0)
     val range = (max - min).coerceAtLeast(1.0)
+    val progress = remember { Animatable(0f) }
+    LaunchedEffect(data) { progress.animateTo(1f, tween(750, easing = FastOutSlowInEasing)) }
     Column(modifier.fillMaxWidth()) {
         androidx.compose.foundation.Canvas(
             Modifier.fillMaxWidth().height(110.dp)
@@ -283,9 +531,21 @@ fun LineChart(
             }
             val path = Path()
             pts.forEachIndexed { i, p -> if (i == 0) path.moveTo(p.x, p.y) else path.lineTo(p.x, p.y) }
-            drawPath(path, color, style = Stroke(width = 5f, cap = StrokeCap.Round))
-            pts.forEach { p ->
-                drawCircle(color, radius = 7f, center = p)
+            val area = Path()
+            area.moveTo(0f, h)
+            pts.forEach { p -> area.lineTo(p.x, p.y) }
+            area.lineTo(w, h)
+            area.close()
+            val clipW = w * progress.value
+            clipRect(left = 0f, top = 0f, right = clipW, bottom = h) {
+                drawPath(
+                    area,
+                    Brush.verticalGradient(
+                        colors = listOf(color.copy(alpha = 0.28f), color.copy(alpha = 0f))
+                    )
+                )
+                drawPath(path, color, style = Stroke(width = 5f, cap = StrokeCap.Round))
+                pts.forEach { p -> drawCircle(color, radius = 7f, center = p) }
             }
         }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
@@ -396,7 +656,7 @@ fun ExConfigDialog(
                     LabeledTextField(tempo, { tempo = it.take(12) }, "Tempo (ex.: 2-0-1)", Modifier.weight(1f))
                 }
                 Row(
-                    Modifier.fillMaxWidth().androidH().background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)).padding(8.dp),
+                    Modifier.fillMaxWidth().androidH().background(MaterialTheme.colorScheme.surfaceContainerHigh, RoundedCornerShape(10.dp)).padding(8.dp),
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     listOf("", "Drop-set", "Bi-set", "Rest-pause", "Pirâmide", "Até a falha").forEach { m ->

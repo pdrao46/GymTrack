@@ -1,17 +1,51 @@
 package com.gymtrack.app.ui.nav
 
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material3.*
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.animateColorAsState
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -63,6 +97,82 @@ private val tabs = listOf(
     Tab(Routes.MORE, "Mais", Icons.Filled.Menu)
 )
 
+/**
+ * Barra de navegação inferior: baixa, escura, com indicador em pílula
+ * animado e label claro na aba ativa.
+ */
+@Composable
+private fun PremiumBottomBar(current: String?, onSelect: (String) -> Unit) {
+    Surface(
+        color = MaterialTheme.colorScheme.surface,
+        shadowElevation = 10.dp,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+    ) {
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .navigationBarsPadding()
+                .height(60.dp)
+                .padding(horizontal = 6.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            tabs.forEach { tab ->
+                val selected = current == tab.route
+                val iconColor by animateColorAsState(
+                    if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                    tween(220), label = "tabIcon"
+                )
+                val labelColor by animateColorAsState(
+                    if (selected) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
+                    tween(220), label = "tabLabel"
+                )
+                val pillWidth by animateDpAsState(if (selected) 52.dp else 30.dp, tween(260, easing = FastOutSlowInEasing), label = "tabPill")
+                val interaction = remember { MutableInteractionSource() }
+                Column(
+                    Modifier
+                        .weight(1f)
+                        .height(52.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                        .clickable(interactionSource = interaction, indication = null) {
+                            if (current != tab.route) onSelect(tab.route)
+                        },
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Spacer(Modifier.height(7.dp))
+                    Box(
+                        Modifier
+                            .height(26.dp)
+                            .width(pillWidth)
+                            .clip(RoundedCornerShape(50))
+                            .background(
+                                MaterialTheme.colorScheme.primary.copy(
+                                    alpha = if (selected) 0.16f else 0f
+                                )
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            tab.icon,
+                            contentDescription = tab.label,
+                            modifier = Modifier.size(21.dp),
+                            tint = iconColor
+                        )
+                    }
+                    Spacer(Modifier.height(3.dp))
+                    Text(
+                        tab.label,
+                        style = MaterialTheme.typography.labelSmall,
+                        fontSize = 10.sp,
+                        fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium,
+                        color = labelColor,
+                        maxLines = 1
+                    )
+                }
+            }
+        }
+    }
+}
+
 @Composable
 fun AppNav() {
     val nav = rememberNavController()
@@ -71,24 +181,14 @@ fun AppNav() {
     val showBar = current in tabs.map { it.route }
 
     Scaffold(
+        containerColor = MaterialTheme.colorScheme.background,
         bottomBar = {
             if (showBar) {
-                NavigationBar {
-                    tabs.forEach { tab ->
-                        NavigationBarItem(
-                            selected = current == tab.route,
-                            onClick = {
-                                if (current != tab.route) {
-                                    nav.navigate(tab.route) {
-                                        popUpTo(Routes.HOME) { saveState = true }
-                                        launchSingleTop = true
-                                        restoreState = true
-                                    }
-                                }
-                            },
-                            icon = { Icon(tab.icon, null) },
-                            label = { Text(tab.label) }
-                        )
+                PremiumBottomBar(current = current) { route ->
+                    nav.navigate(route) {
+                        popUpTo(Routes.HOME) { saveState = true }
+                        launchSingleTop = true
+                        restoreState = true
                     }
                 }
             }
@@ -97,7 +197,17 @@ fun AppNav() {
         NavHost(
             navController = nav,
             startDestination = Routes.HOME,
-            modifier = Modifier.padding(padding)
+            modifier = Modifier.padding(padding),
+            enterTransition = {
+                fadeIn(tween(230)) +
+                    slideInVertically(tween(280, easing = FastOutSlowInEasing)) { it / 14 }
+            },
+            exitTransition = { fadeOut(tween(170)) },
+            popEnterTransition = {
+                fadeIn(tween(230)) +
+                    slideInVertically(tween(280, easing = FastOutSlowInEasing)) { it / 14 }
+            },
+            popExitTransition = { fadeOut(tween(170)) }
         ) {
             composable(Routes.HOME) { DashboardScreen(nav) }
             composable(Routes.AGENDA) { AgendaScreen(nav) }

@@ -1,6 +1,8 @@
 package com.gymtrack.app.ui.screens
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -11,7 +13,9 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.gymtrack.app.data.*
@@ -25,19 +29,30 @@ fun RecordsScreen(nav: NavHostController) {
     val tick = refreshTick()
     val settings = LocalAppSettings.current
     var records by remember { mutableStateOf<List<PersonalRecord>>(emptyList()) }
+    var allLogs by remember { mutableStateOf<List<SetLog>>(emptyList()) }
 
     LaunchedEffect(tick) {
         kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-            records = Stats.personalRecords(Repo.allLogs())
+            val l = Repo.allLogs()
+            allLogs = l
+            records = Stats.personalRecords(l)
+        }
+    }
+
+    // delta real: maior carga x carga imediatamente anterior
+    val withDelta = remember(records, allLogs) {
+        val completed = allLogs.filter { it.completed && it.weight > 0 }
+        records.map { pr ->
+            val prev = completed
+                .filter { it.exerciseName == pr.exerciseName && it.weight < pr.maxWeight }
+                .maxOfOrNull { it.weight }
+            pr to (prev?.let { pr.maxWeight - it })
         }
     }
 
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp)) {
         Spacer(Modifier.height(10.dp))
-        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = { nav.popBackStack() }) { Icon(Icons.Filled.ArrowBack, "Voltar") }
-            Text("Meus recordes 🏆", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-        }
+        BackHeader("Meus recordes", { nav.popBackStack() })
         Text(
             "Os recordes são registrados automaticamente com base nas séries concluídas.",
             style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -49,23 +64,54 @@ fun RecordsScreen(nav: NavHostController) {
                 EmptyState("Nenhum recorde ainda. Registre cargas nos treinos para começar a competir com você mesmo!", Icons.Filled.EmojiEvents)
             }
         }
-        records.forEach { pr ->
-            AppCard(Modifier.fillMaxWidth().padding(vertical = 5.dp)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("🏆", style = MaterialTheme.typography.headlineSmall)
-                    Spacer(Modifier.width(12.dp))
-                    Column(Modifier.weight(1f)) {
-                        Text(pr.exerciseName, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+        EnterSection(0) {
+            withDelta.forEach { (pr, delta) ->
+                AppCard(Modifier.fillMaxWidth().padding(vertical = 5.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(
+                            Modifier.size(42.dp).clip(RoundedCornerShape(13.dp))
+                                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.14f)),
+                            contentAlignment = Alignment.Center
+                        ) { Text("🏆", style = MaterialTheme.typography.titleLarge) }
+                        Spacer(Modifier.width(12.dp))
+                        Column(Modifier.weight(1f)) {
+                            Text(
+                                pr.exerciseName,
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    "${Disp.weight(pr.maxWeight, settings.unit)} × ${pr.reps} reps",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                                if (delta != null && delta > 0) {
+                                    Spacer(Modifier.width(7.dp))
+                                    PillBadge(
+                                        "+${Disp.fmtKg(delta)} kg",
+                                        container = MaterialTheme.colorScheme.primary.copy(alpha = 0.16f),
+                                        content = MaterialTheme.colorScheme.primary
+                                    )
+                                }
+                            }
+                            if (pr.muscleGroup.isNotBlank()) {
+                                Text(
+                                    pr.muscleGroup,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
                         Text(
-                            "Melhor carga: ${Disp.weight(pr.maxWeight, settings.unit)} × ${pr.reps} reps" +
-                                (if (pr.muscleGroup.isNotBlank()) " · ${pr.muscleGroup}" else ""),
-                            style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant
+                            DateUtils.fmtDate(pr.dateEpochDay),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
-                    Text(
-                        DateUtils.fmtDate(pr.dateEpochDay),
-                        style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold
-                    )
                 }
             }
         }
