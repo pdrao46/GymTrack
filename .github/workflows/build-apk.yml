@@ -51,9 +51,22 @@ jobs:
 
       - name: Build release APK
         run: |
+          set -o pipefail
           ./gradlew assembleRelease \
             -DGT_STORE_FILE="${{ github.workspace }}/keystore/gymtrack.jks" \
-            --no-daemon --stacktrace
+            --no-daemon --stacktrace 2>&1 | tee build-full.log
+
+      - name: Publicar log de erro na branch
+        if: failure()
+        run: |
+          grep -E "^e: |error:|Execution failed for|Caused by|FAILURE: Build failed|What went wrong" build-full.log | tail -120 > build-erro.log || true
+          grep -E "^e: " -A 2 build-full.log | tail -250 >> build-erro.log || true
+          tail -80 build-full.log >> build-erro.log || true
+          git config user.name "arena-ai-coding-agent[bot]"
+          git config user.email "arena-ai-coding-agent[bot]@users.noreply.github.com"
+          git add build-erro.log
+          git commit -m "ci: log de erro do build [skip ci]" || echo "nada a commitar"
+          git push origin HEAD:${{ github.ref_name }}
 
       - name: Collect APK
         run: |
