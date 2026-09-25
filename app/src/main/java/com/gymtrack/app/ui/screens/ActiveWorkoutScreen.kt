@@ -232,12 +232,11 @@ fun ActiveWorkoutScreen(nav: NavHostController, sessionId: Long) {
 
         // ---------- exercício atual ----------
         Spacer(Modifier.height(16.dp))
-        if (wex.isEmpty()) {
+        if (wex.isEmpty() || current == null) {
             AppCard(Modifier.fillMaxWidth()) {
                 EmptyState("Este treino não tem exercícios. Finalize ou edite o treino.", Icons.Filled.Info)
             }
         } else {
-            val current = current!! // não-nulo neste ponto: wex não está vazio
             Row(verticalAlignment = Alignment.CenterVertically) {
                 IconButton(
                     onClick = { if (currentIdx > 0) currentIdx-- },
@@ -392,7 +391,7 @@ fun ActiveWorkoutScreen(nav: NavHostController, sessionId: Long) {
                         OutlinedButton(onClick = { restSeconds += 15 }, shape = RoundedCornerShape(12.dp)) { Text("+15s") }
                     }
                     Spacer(Modifier.height(8.dp))
-                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth().androidHRow()) {
                         listOf(30, 45, 60, 90, 120).forEach { p ->
                             AssistChip(onClick = { restSeconds = p; restPaused = false }, label = { Text("${p}s") })
                         }

@@ -123,10 +123,10 @@ fun TemplatesScreen(nav: NavHostController) {
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("Modelos prontos") },
-                navigationIcon = { IconButton(onClick = { nav.popBackStack() }) { Icon(Icons.Filled.ArrowBack, "Voltar") } }
-            )
+            Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                IconButton(onClick = { nav.popBackStack() }) { Icon(Icons.Filled.ArrowBack, "Voltar") }
+                Text("Modelos prontos", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+            }
         }
     ) { pad ->
         Column(

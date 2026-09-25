@@ -2,10 +2,13 @@ package com.gymtrack.app.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -390,7 +393,7 @@ fun ExConfigDialog(
                     LabeledTextField(tempo, { tempo = it.take(12) }, "Tempo (ex.: 2-0-1)", Modifier.weight(1f))
                 }
                 Row(
-                    Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)).padding(8.dp),
+                    Modifier.fillMaxWidth().androidH().background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)).padding(8.dp),
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     listOf("", "Drop-set", "Bi-set", "Rest-pause", "Pirâmide", "Até a falha").forEach { m ->
