@@ -1,0 +1,98 @@
+name: Build APK
+
+on:
+  push:
+    branches: ["**"]
+    paths:
+      - "app/**"
+      - "build.gradle.kts"
+      - "settings.gradle.kts"
+      - "gradle.properties"
+      - ".github/workflows/build-apk.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Gradle (cache)
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Grant execute to gradlew
+        run: chmod +x gradlew
+
+      - name: Restore keystore
+        id: keystore
+        uses: actions/cache@v4
+        with:
+          path: keystore/gymtrack.jks
+          key: gymtrack-keystore-v1
+
+      - name: Generate keystore
+        if: steps.keystore.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p keystore
+          keytool -genkeypair -v -keystore keystore/gymtrack.jks -alias gymtrack \
+            -keyalg RSA -keysize 2048 -validity 10950 \
+            -storepass gymtrack123456 -keypass gymtrack123456 \
+            -dname "CN=GymTrack, OU=Mobile, O=GymTrack, L=BR, ST=BR, C=BR"
+
+      - name: Build release APK
+        run: |
+          set -o pipefail
+          ./gradlew assembleRelease \
+            -DGT_STORE_FILE="${{ github.workspace }}/keystore/gymtrack.jks" \
+            --no-daemon --stacktrace 2>&1 | tee build-full.log
+
+      - name: Publicar log de erro na branch
+        if: failure()
+        run: |
+          grep -E "^e: |error:|Execution failed for|Caused by|FAILURE: Build failed|What went wrong" build-full.log | tail -120 > build-erro.log || true
+          grep -E "^e: " -A 2 build-full.log | tail -250 >> build-erro.log || true
+          tail -80 build-full.log >> build-erro.log || true
+          git config user.name "arena-ai-coding-agent[bot]"
+          git config user.email "arena-ai-coding-agent[bot]@users.noreply.github.com"
+          git add build-erro.log
+          git commit -m "ci: log de erro do build [skip ci]" || echo "nada a commitar"
+          git push origin HEAD:${{ github.ref_name }}
+
+      - name: Collect APK
+        run: |
+          mkdir -p apk
+          cp app/build/outputs/apk/release/app-release.apk apk/GymTrack.apk
+          ls -la apk/
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: GymTrack-apk
+          path: apk/GymTrack.apk
+
+      - name: Commit APK to branch
+        run: |
+          git config user.name "arena-ai-coding-agent[bot]"
+          git config user.email "arena-ai-coding-agent[bot]@users.noreply.github.com"
+          git add apk/GymTrack.apk
+          git commit -m "ci: atualiza APK [skip ci]" || echo "Nada para commitar"
+          git push origin HEAD:${{ github.ref_name }}
+
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create apk-latest apk/GymTrack.apk \
+            --title "GymTrack — APK instalável" \
+            --notes "APK mais recente do GymTrack. Baixe o arquivo GymTrack.apk e instale no Android." \
+            || gh release upload apk-latest apk/GymTrack.apk --clobber
