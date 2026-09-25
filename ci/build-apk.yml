@@ -27,10 +27,11 @@ jobs:
           distribution: temurin
           java-version: "17"
 
-      - name: Set up Gradle
+      - name: Set up Gradle (cache)
         uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: "8.10.2"
+
+      - name: Grant execute to gradlew
+        run: chmod +x gradlew
 
       - name: Restore keystore
         id: keystore
@@ -50,7 +51,7 @@ jobs:
 
       - name: Build release APK
         run: |
-          gradle assembleRelease \
+          ./gradlew assembleRelease \
             -DGT_STORE_FILE="${{ github.workspace }}/keystore/gymtrack.jks" \
             --no-daemon --stacktrace
 
