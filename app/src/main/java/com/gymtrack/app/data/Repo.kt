@@ -1,6 +1,7 @@
 package com.gymtrack.app.data
 
 import android.database.Cursor
+import android.database.sqlite.SQLiteDatabase
 import com.gymtrack.app.data.RefreshBus
 
 // ---------- Helpers de cursor ----------
@@ -34,7 +35,7 @@ private fun <T> Cursor.mapList(f: (Cursor) -> T): List<T> = use {
 // ---------- Repositório ----------
 
 /** Acesso curto ao banco (inicializado por Graph.init) */
-private val db: GymDb get() = Graph.db!!
+private val db: SQLiteDatabase get() = Graph.db!!.writableDatabase
 
 object Repo {
 

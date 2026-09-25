@@ -277,7 +277,7 @@ object Disp {
     const val LB_PER_KG = 2.20462262
 
     fun fmtKg(kg: Double): String =
-        if (kg == kg.toLong().toDouble()) kg.toLong().toString() else String.format(PT, "%.1f", kg)
+        if (kg == kg.toLong().toDouble()) kg.toLong().toString() else String.format(DateUtils.PT, "%.1f", kg)
 
     /** Converte kg (armazenado) para a unidade escolhida e formata */
     fun weight(kg: Double, unit: String, withUnit: Boolean = true): String {

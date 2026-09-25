@@ -105,7 +105,7 @@ fun ExerciseCatalogScreen(nav: NavHostController) {
                     LabeledTextField(name, { name = it.take(60) }, "Nome do exercício")
                     Row(
                         Modifier.fillMaxWidth()
-                            .android.clip(androidx.compose.foundation.shape.RoundedCornerShape(12.dp))
+                            .clip(androidx.compose.foundation.shape.RoundedCornerShape(12.dp))
                             .clickable { groupPick = true }.padding(12.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {

@@ -2,6 +2,7 @@ package com.gymtrack.app.ui.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -19,6 +20,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
+import androidx.compose.ui.text.input.KeyboardType
 import com.gymtrack.app.data.*
 import com.gymtrack.app.rem.RestSignal
 import com.gymtrack.app.ui.*
@@ -476,7 +478,7 @@ fun ActiveWorkoutScreen(nav: NavHostController, sessionId: Long) {
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Text("Aplica a todas as séries não concluídas de ${current.exerciseName}.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    LabeledTextField(weightTxt, { weightTxt = it.replace(',', '.').filter { c -> c.isDigit() || c == '.' }.take(7) }, "Carga (${settings.unit})", KeyboardTypeDecimal())
+                    LabeledTextField(weightTxt, { weightTxt = it.replace(',', '.').filter { c -> c.isDigit() || c == '.' }.take(7) }, "Carga (${settings.unit})", keyboardType = KeyboardTypeDecimal())
                     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         listOf(1.0, 2.5, 5.0).forEach { inc ->
                             OutlinedButton(onClick = {

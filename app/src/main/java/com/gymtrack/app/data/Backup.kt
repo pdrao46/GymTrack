@@ -6,7 +6,7 @@ import org.json.JSONObject
 object Backup {
 
     fun exportJson(): String {
-        val db = Graph.db!!
+        val db = Graph.db!!.writableDatabase
         val root = JSONObject()
         root.put("app", "GymTrack")
         root.put("version", 1)
@@ -84,7 +84,7 @@ object Backup {
 
     fun importJson(text: String): Int {
         val root = JSONObject(text)
-        val db = Graph.db!!
+        val db = Graph.db!!.writableDatabase
         db.beginTransaction()
         try {
             db.execSQL("DELETE FROM workouts")

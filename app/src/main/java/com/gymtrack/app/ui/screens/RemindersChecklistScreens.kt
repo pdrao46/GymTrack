@@ -11,6 +11,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -123,7 +124,7 @@ fun RemindersScreen(nav: NavHostController) {
                         LabeledTextField(minTxt, { minTxt = it.filter { c -> c.isDigit() }.take(2) }, "Minutos", Modifier.weight(1f), NumKeyboard())
                     }
                     Text("Dias da semana", style = MaterialTheme.typography.labelMedium)
-                    WeekdayChips(days) { iso -> days = if (days.contains(iso)) days - iso else days + iso }
+                    WeekdayChips(selected = days, onToggle = { iso -> days = if (days.contains(iso)) days - iso else days + iso })
                     TextButton(onClick = { days = setOf(1, 2, 3, 4, 5, 6, 7) }) { Text("Selecionar todos os dias") }
                 }
             },

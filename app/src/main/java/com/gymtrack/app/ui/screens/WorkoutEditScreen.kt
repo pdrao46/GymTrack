@@ -5,6 +5,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -14,6 +15,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.gymtrack.app.data.*
@@ -89,7 +91,7 @@ fun WorkoutEditScreen(nav: NavHostController, workoutId: Long) {
         Spacer(Modifier.height(12.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             TimeField(time, { time = it }, Modifier.weight(1f))
-            LabeledTextField(estMinutes, { estMinutes = it.filter { c -> c.isDigit() }.take(3) }, "Tempo estimado (min)", Modifier.weight(1f), KeyboardTypeNumber())
+            LabeledTextField(estMinutes, { estMinutes = it.filter { c -> c.isDigit() }.take(3) }, "Tempo estimado (min)", Modifier.weight(1f), KeyboardType.Number)
         }
         TextButton(onClick = { estMinutes = autoEstimate().toString() }) {
             Icon(Icons.Filled.Calculate, null, modifier = Modifier.size(16.dp))
@@ -121,7 +123,7 @@ fun WorkoutEditScreen(nav: NavHostController, workoutId: Long) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             SectionTitle("Exercícios (${wex.size})")
             Spacer(Modifier.weight(1f))
-            Button(onClick = { pickingExercise = true }, shape = RoundedCornerShapeShape()) {
+            Button(onClick = { pickingExercise = true }, shape = RoundedCornerShape(12.dp)) {
                 Icon(Icons.Filled.Add, null, modifier = Modifier.size(18.dp))
                 Spacer(Modifier.width(4.dp))
                 Text("ADICIONAR EXERCÍCIO")
@@ -230,9 +232,7 @@ fun WorkoutEditScreen(nav: NavHostController, workoutId: Long) {
 }
 
 @Composable
-private fun RoundedCornerShapeShape() = androidx.compose.foundation.shape.RoundedCornerShape(12.dp)
-
-private fun KeyboardTypeNumber() = androidx.compose.ui.text.input.KeyboardType.Number
+private fun KeyboardType.Number = androidx.compose.ui.text.input.KeyboardType.Number
 
 // ---------- diálogo para escolher exercício do catálogo ----------
 

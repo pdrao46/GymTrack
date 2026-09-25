@@ -150,8 +150,6 @@ private fun WeekAgenda(nav: NavHostController, workouts: List<Workout>, sessions
 }
 
 @Composable
-
-@Composable
 private fun Legend(color: androidx.compose.ui.graphics.Color, label: String) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         Box(Modifier.size(10.dp).clip(CircleShape).background(color))
